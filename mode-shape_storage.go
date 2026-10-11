@@ -1,4 +1,4 @@
-package mode-shape_storage
+package modeshape_storage
 
 import (
 	"context"
@@ -11,6 +11,8 @@ import (
 )
 
 // ModeShapeStorage mode-shape存储实现
+// 尚未接入真实服务端，仅为占位实现，不可用于分布式锁。
+// 真正接入时需借助服务端原子语义实现 CAS。
 type ModeShapeStorage struct {
 	mu sync.RWMutex
 }
@@ -25,23 +27,28 @@ const StorageName = "mode-shape-storage"
 
 func (x *ModeShapeStorage) GetName() string { return StorageName }
 func (x *ModeShapeStorage) Capabilities() []storage.StorageCapability {
-	return []storage.StorageCapability{storage.CapabilityCAS, storage.CapabilityReliableTime}
+	return []storage.StorageCapability{storage.CapabilityReliableTime, storage.CapabilityWatch}
 }
+
+func (x *ModeShapeStorage) Watch(ctx context.Context, lockId string) (<-chan *storage.LockInformation, error) {
+	return storage.NewPollingLockWatcher(x, 500*time.Millisecond).Watch(ctx, lockId)
+}
+
 func (x *ModeShapeStorage) Init(ctx context.Context) error { return nil }
 func (x *ModeShapeStorage) CreateWithVersion(ctx context.Context, lockId string, version storage.Version, lockInformation *storage.LockInformation) error {
 	x.mu.Lock()
 	defer x.mu.Unlock()
-	return nil
+	return storage_lock.ErrStorageCapabilityMissing
 }
 func (x *ModeShapeStorage) UpdateWithVersion(ctx context.Context, lockId string, expectedVersion, newVersion storage.Version, lockInformation *storage.LockInformation) error {
 	x.mu.Lock()
 	defer x.mu.Unlock()
-	return nil
+	return storage_lock.ErrStorageCapabilityMissing
 }
 func (x *ModeShapeStorage) DeleteWithVersion(ctx context.Context, lockId string, expectedVersion storage.Version, lockInformation *storage.LockInformation) error {
 	x.mu.Lock()
 	defer x.mu.Unlock()
-	return nil
+	return storage_lock.ErrStorageCapabilityMissing
 }
 func (x *ModeShapeStorage) Get(ctx context.Context, lockId string) (string, error) {
 	x.mu.RLock()
